@@ -16,6 +16,13 @@ CMP = 0b10100111
 JMP = 0b01010100
 JEQ = 0b01010101
 JNE = 0b01010110
+AND = 0b10101000
+OR = 0b10101010
+XOR = 0b10101011
+NOT = 0b01101001
+SHL = 0b10101100
+SHR = 0b10101101
+MOD = 0b10100100
 
 
 class CPU:
@@ -58,6 +65,21 @@ class CPU:
         # JEQ/JNE
         self.branchtable[JEQ] = self.handle_jeq
         self.branchtable[JNE] = self.handle_jne
+        # STRETCH 1
+        # AND
+        self.branchtable[AND] = self.handle_and
+        # OR
+        self.branchtable[OR] = self.handle_or
+        # XOR
+        self.branchtable[XOR] = self.handle_xor
+        # NOT
+        self.branchtable[NOT] = self.handle_not
+        # SHL
+        self.branchtable[SHL] = self.handle_shl
+        # SHR
+        self.branchtable[SHR] = self.handle_shr
+        # MOD
+        self.branchtable[MOD] = self.handle_mod
 
     def ram_read(self, address):
         value_in_memory = self.ram[address]
@@ -131,6 +153,35 @@ class CPU:
         # MUL
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+        # AND
+        elif op == "AND":
+            value = self.reg[reg_a] & self.reg[reg_b]
+            self.reg[reg_a] = value
+        # OR
+        elif op == "OR":
+            value = self.reg[reg_a] | self.reg[reg_b]
+            self.reg[reg_a] = value
+        # XOR
+        elif op == "XOR":
+            value = self.reg[reg_a] ^ self.reg[reg_b]
+            self.reg[reg_a] = value
+        # NOT
+        elif op == "NOT":
+            mask = 0b11111111
+            value = self.reg[reg_a]
+            self.reg[reg_a] = value ^ mask
+        # SHL
+        elif op == "SHL":
+            value = self.reg[reg_a] << self.reg[reg_b]
+            self.reg[reg_a] = value
+        elif op == "SHR":
+            value = self.reg[reg_a] >> self.reg[reg_b]
+            # print(bin(self.reg[reg_a]), "<<<< before")
+            self.reg[reg_a] = value
+            # print(bin(self.reg[reg_a]), "<<<< after")
+        elif op == "MOD":
+            value = self.reg[reg_a] % self.reg[reg_b]
+            self.reg[reg_a] = value
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -174,7 +225,7 @@ class CPU:
         self.alu("MUL", operand_a, operand_b)
         self.inc_size = 3
 
-    def handle_hlt(self, IR, operand_a, operand_b):
+    def handle_hlt(self, IR=None, operand_a=None, operand_b=None):
         print("Operations halted.")
         sys.exit(-1)
         self.running = False
@@ -271,6 +322,37 @@ class CPU:
             self.pc = self.reg[operand_a]
         else:
             self.pc += 2
+
+    def handle_and(self, IR, operand_a, operand_b):
+        self.alu("AND", operand_a, operand_b)
+        self.inc_size = 3
+
+    def handle_or(self, IR, operand_a, operand_b):
+        self.alu("OR", operand_a, operand_b)
+        self.inc_size = 3
+
+    def handle_xor(self, IR, operand_a, operand_b):
+        self.alu("XOR", operand_a, operand_b)
+        self.inc_size = 3
+
+    def handle_not(self, IR, operand_a, operand_b):
+        self.alu("NOT", operand_a, operand_b)
+        self.inc_size = 2
+
+    def handle_shl(self, IR, operand_a, operand_b):
+        self.alu("SHL", operand_a, operand_b)
+        self.inc_size = 3
+
+    def handle_shr(self, IR, operand_a, operand_b):
+        self.alu("SHR", operand_a, operand_b)
+        self.inc_size = 3
+
+    def handle_mod(self, IR, operand_a, operand_b):
+        if operand_b == 0:
+            self.handle_hlt(IR)
+        else:
+            self.alu("MOD", operand_a, operand_b)
+        self.inc_size = 3
 
     def run(self):
         """Run the CPU."""
